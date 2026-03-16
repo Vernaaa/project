@@ -966,7 +966,10 @@
           <small class="muted">目前任務整體執行狀態。</small>
         </div>
         <div>
-          <label for="taskProgress">任務進度 (%)</label>
+          <label for="taskProgress">任務進度
+          <label>備註</label>
+          <textarea id="taskNote" placeholder="例如：需等待第三方 API 文件、客戶確認規格等"></textarea>
+          <small class="muted">用於記錄任務相關注意事項、風險或補充說明。</small> (%)</label>
           <input id="taskProgress" type="number" min="0" max="100" placeholder="0-100" />
           <small class="muted">任務完成率，會影響專案整體進度。</small>
         </div>
