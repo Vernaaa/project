@@ -576,7 +576,7 @@
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="openProjectModal">＋ 新增專案</button>
-          <button class="btn btn-outline" id="openMailModal">提醒設定</button>
+          
           <button class="btn btn-outline" id="exportJsonBtn">匯出 JSON</button>
         </div>
       </div>
@@ -727,8 +727,8 @@
     <div class="modal-content">
       <div class="modal-header">
         <div>
-          <h3 style="margin:0;">建立新專案</h3>
-          <div class="muted">新增後會暫存在瀏覽器 localStorage。</div>
+          <h3 style="margin:0;" id="projectModalTitle">建立新專案</h3>
+          <div class="muted">可新增或編輯專案資料，內容會暫存在瀏覽器 localStorage。</div>
         </div>
         <button class="modal-close" onclick="closeModal('projectModal')">×</button>
       </div>
@@ -739,22 +739,89 @@
         <input id="newOwner" placeholder="負責人" />
         <input id="newClient" placeholder="客戶 / 部門" />
         <input id="newDueDate" type="date" />
+        <select id="newStatus">
+          <option value="未開始">未開始</option>
+          <option value="進行中">進行中</option>
+          <option value="即將逾期">即將逾期</option>
+          <option value="已完成">已完成</option>
+        </select>
+        <select id="newPriority">
+          <option value="低">低</option>
+          <option value="中" selected>中</option>
+          <option value="高">高</option>
+        </select>
+        <select id="newHealth">
+          <option value="正常">正常</option>
+          <option value="注意">注意</option>
+          <option value="風險">風險</option>
+        </select>
+        <input id="newProgress" type="number" min="0" max="100" placeholder="完成率 0~100" />
+      </div>
+      <div style="margin-top:12px;">
+        <textarea id="newRisk" placeholder="風險提醒"></textarea>
       </div>
       <div class="actions">
         <button class="btn btn-outline" onclick="closeModal('projectModal')">取消</button>
-        <button class="btn btn-primary" onclick="createProject()">建立專案</button>
+        <button class="btn btn-primary" id="saveProjectBtn" onclick="saveProject()">建立專案</button>
       </div>
     </div>
   </div>
 
-  <div class="modal" id="mailModal">
+  <div class="modal" id="taskModal">
     <div class="modal-content">
       <div class="modal-header">
         <div>
-          <h3 style="margin:0;">Email 提醒邏輯建議</h3>
-          <div class="muted">這裡說明 GitHub Pages 版本與正式寄信版本的差異。</div>
+          <h3 style="margin:0;" id="taskModalTitle">新增子任務</h3>
+          <div class="muted">可新增或編輯指定專案下的子任務。</div>
         </div>
-        <button class="modal-close" onclick="closeModal('mailModal')">×</button>
+        <button class="modal-close" onclick="closeModal('taskModal')">×</button>
+      </div>
+      <div class="form-grid">
+        <input id="taskName" placeholder="任務名稱" />
+        <input id="taskAssignee" placeholder="負責人" />
+        <input id="taskStart" type="date" />
+        <input id="taskEnd" type="date" />
+        <select id="taskStatus">
+          <option value="未開始">未開始</option>
+          <option value="進行中">進行中</option>
+          <option value="已完成">已完成</option>
+        </select>
+        <input id="taskProgress" type="number" min="0" max="100" placeholder="進度 0~100" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="closeModal('taskModal')">取消</button>
+        <button class="btn btn-primary" id="saveTaskBtn" onclick="saveTask()">儲存子任務</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="urgentModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin:0;" id="urgentModalTitle">新增臨時事項</h3>
+          <div class="muted">可新增或編輯插單、支援事項與突發任務。</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('urgentModal')">×</button>
+      </div>
+      <div class="form-grid">
+        <input id="urgentTitle" placeholder="事項名稱" />
+        <input id="urgentOwner" placeholder="負責人" />
+        <input id="urgentDue" type="date" />
+        <select id="urgentLevel">
+          <option value="低">低</option>
+          <option value="中">中</option>
+          <option value="高">高</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="closeModal('urgentModal')">取消</button>
+        <button class="btn btn-primary" id="saveUrgentBtn" onclick="saveUrgentWork()">儲存臨時事項</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="modal-close" onclick="closeModal('mailModal')">×</button>
       </div>
       <div class="soft-box" style="margin-bottom:12px;">
         <div class="section-title">目前 GitHub Pages 版本可做到</div>
@@ -892,6 +959,11 @@
 
     let state = loadState();
     let selectedProjectId = state.projects[0]?.id || null;
+    let editingProjectId = null;
+    let editingTaskProjectId = null;
+    let editingTaskId = null;
+    let editingUrgentProjectId = null;
+    let editingUrgentId = null;
 
     function loadState() {
       try {
@@ -1036,18 +1108,27 @@
             <div class="badges">
               <span class="badge ${getStatusClass(target.status)}">${target.status}</span>
               <span class="badge badge-outline">優先度：${target.priority}</span>
-              <span class="badge badge-outline">截止：${target.dueDate}</span>
+              <span class="badge badge-outline">截止：${target.dueDate || '—'}</span>
             </div>
           </div>
           <div class="detail-grid">
-            <div class="mini-box"><div class="mini-label">專案經理</div><div class="mini-value">${target.pm}</div></div>
-            <div class="mini-box"><div class="mini-label">主要負責人</div><div class="mini-value">${target.owner}</div></div>
+            <div class="mini-box"><div class="mini-label">專案經理</div><div class="mini-value">${target.pm || '—'}</div></div>
+            <div class="mini-box"><div class="mini-label">主要負責人</div><div class="mini-value">${target.owner || '—'}</div></div>
             <div class="mini-box"><div class="mini-label">提醒機制</div><div class="mini-value">${target.emailReminder ? '已啟用 Email 提醒' : '未啟用'}</div></div>
           </div>
-          <div class="risk-box"><strong>風險提醒</strong><br>${target.risk}</div>
+          <div class="risk-box"><strong>風險提醒</strong><br>${target.risk || '—'}</div>
+          <div class="actions" style="justify-content:flex-start; margin-top:14px;">
+            <button class="btn btn-primary" onclick="openEditProjectModal('${target.id}')">編輯專案</button>
+            <button class="btn btn-outline" onclick="deleteProject('${target.id}')">刪除專案</button>
+            <button class="btn btn-outline" onclick="openTaskModal('${target.id}')">＋ 新增子任務</button>
+            <button class="btn btn-outline" onclick="openUrgentModal('${target.id}')">＋ 新增臨時事項</button>
+          </div>
         </div>
         <div style="margin-top:18px;">
-          <div class="section-title">子任務追蹤</div>
+          <div class="row-between" style="margin-bottom:10px;">
+            <div class="section-title" style="margin-bottom:0;">子任務追蹤</div>
+            <button class="btn btn-outline" onclick="openTaskModal('${target.id}')">新增子任務</button>
+          </div>
           <table>
             <thead>
               <tr>
@@ -1056,23 +1137,63 @@
                 <th>期間</th>
                 <th>狀態</th>
                 <th>進度</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
-              ${target.tasks.map(task => `
+              ${target.tasks.length ? target.tasks.map(task => `
                 <tr>
                   <td><strong>${task.name}</strong></td>
-                  <td>${task.assignee}</td>
-                  <td>${task.start} ~ ${task.end}</td>
+                  <td>${task.assignee || '—'}</td>
+                  <td>${task.start || '—'} ~ ${task.end || '—'}</td>
                   <td><span class="badge ${getStatusClass(task.status)}">${task.status}</span></td>
                   <td>
                     <div class="progress-wrap" style="max-width:180px;">
-                      <div class="progress-top"><span></span><strong>${task.progress}%</strong></div>
-                      <div class="progress-bar"><div class="progress-value" style="width:${task.progress}%"></div></div>
+                      <div class="progress-top"><span></span><strong>${task.progress || 0}%</strong></div>
+                      <div class="progress-bar"><div class="progress-value" style="width:${task.progress || 0}%"></div></div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button class="btn btn-outline" onclick="openTaskModal('${target.id}', ${task.id})">編輯</button>
+                      <button class="btn btn-outline" onclick="deleteTask('${target.id}', ${task.id})">刪除</button>
                     </div>
                   </td>
                 </tr>
-              `).join('')}
+              `).join('') : '<tr><td colspan="6" class="muted">目前尚無子任務。</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="row-between" style="margin-bottom:10px;">
+            <div class="section-title" style="margin-bottom:0;">臨時事項</div>
+            <button class="btn btn-outline" onclick="openUrgentModal('${target.id}')">新增臨時事項</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>事項</th>
+                <th>負責人</th>
+                <th>到期日</th>
+                <th>優先級</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${target.urgentWorks.length ? target.urgentWorks.map(work => `
+                <tr>
+                  <td><strong>${work.title}</strong></td>
+                  <td>${work.owner || '—'}</td>
+                  <td>${work.due || '—'}</td>
+                  <td><span class="badge badge-outline">${work.level || '中'}</span></td>
+                  <td>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button class="btn btn-outline" onclick="openUrgentModal('${target.id}', ${work.id})">編輯</button>
+                      <button class="btn btn-outline" onclick="deleteUrgentWork('${target.id}', ${work.id})">刪除</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('') : '<tr><td colspan="5" class="muted">目前尚無臨時事項。</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1186,40 +1307,237 @@
       renderSettings();
     }
 
-    function createProject() {
+    function resetProjectForm() {
+      editingProjectId = null;
+      document.getElementById('projectModalTitle').textContent = '建立新專案';
+      document.getElementById('saveProjectBtn').textContent = '建立專案';
+      document.getElementById('newId').disabled = false;
+      ['newId','newName','newPm','newOwner','newClient','newDueDate','newRisk'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('newStatus').value = '未開始';
+      document.getElementById('newPriority').value = '中';
+      document.getElementById('newHealth').value = '正常';
+      document.getElementById('newProgress').value = 0;
+    }
+
+    function openEditProjectModal(projectId) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      editingProjectId = projectId;
+      document.getElementById('projectModalTitle').textContent = '編輯專案';
+      document.getElementById('saveProjectBtn').textContent = '儲存變更';
+      document.getElementById('newId').value = project.id;
+      document.getElementById('newId').disabled = true;
+      document.getElementById('newName').value = project.name || '';
+      document.getElementById('newPm').value = project.pm || '';
+      document.getElementById('newOwner').value = project.owner || '';
+      document.getElementById('newClient').value = project.client || '';
+      document.getElementById('newDueDate').value = project.dueDate || '';
+      document.getElementById('newStatus').value = project.status || '未開始';
+      document.getElementById('newPriority').value = project.priority || '中';
+      document.getElementById('newHealth').value = project.health || '正常';
+      document.getElementById('newProgress').value = project.progress ?? 0;
+      document.getElementById('newRisk').value = project.risk || '';
+      openModal('projectModal');
+    }
+
+    function saveProject() {
       const id = document.getElementById('newId').value.trim();
       const name = document.getElementById('newName').value.trim();
       const pm = document.getElementById('newPm').value.trim();
       const owner = document.getElementById('newOwner').value.trim();
       const client = document.getElementById('newClient').value.trim();
       const dueDate = document.getElementById('newDueDate').value;
+      const status = document.getElementById('newStatus').value;
+      const priority = document.getElementById('newPriority').value;
+      const health = document.getElementById('newHealth').value;
+      const progress = Number(document.getElementById('newProgress').value || 0);
+      const risk = document.getElementById('newRisk').value.trim();
 
       if (!id || !name) {
         alert('請至少輸入專案編號與專案名稱。');
         return;
       }
 
-      state.projects.unshift({
-        id,
-        name,
-        pm,
-        owner,
-        client,
-        status: '未開始',
-        progress: 0,
-        priority: '中',
-        dueDate,
-        health: '正常',
-        risk: '—',
-        emailReminder: true,
-        tasks: [],
-        urgentWorks: [],
-      });
+      if (editingProjectId) {
+        const project = state.projects.find(p => p.id === editingProjectId);
+        if (!project) return;
+        Object.assign(project, { name, pm, owner, client, dueDate, status, priority, health, progress, risk });
+      } else {
+        if (state.projects.some(p => p.id === id)) {
+          alert('專案編號已存在，請使用其他編號。');
+          return;
+        }
+        state.projects.unshift({
+          id,
+          name,
+          pm,
+          owner,
+          client,
+          status,
+          progress,
+          priority,
+          dueDate,
+          health,
+          risk: risk || '—',
+          emailReminder: true,
+          tasks: [],
+          urgentWorks: [],
+        });
+        selectedProjectId = id;
+      }
 
-      selectedProjectId = id;
       saveState();
       closeModal('projectModal');
-      ['newId', 'newName', 'newPm', 'newOwner', 'newClient', 'newDueDate'].forEach(id => document.getElementById(id).value = '');
+      resetProjectForm();
+      renderAll();
+    }
+
+    function deleteProject(projectId) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      if (!confirm(`確定要刪除專案「${project.name}」嗎？`)) return;
+      state.projects = state.projects.filter(p => p.id !== projectId);
+      if (selectedProjectId === projectId) {
+        selectedProjectId = state.projects[0]?.id || null;
+      }
+      saveState();
+      renderAll();
+    }
+
+    function resetTaskForm() {
+      editingTaskProjectId = null;
+      editingTaskId = null;
+      document.getElementById('taskModalTitle').textContent = '新增子任務';
+      document.getElementById('saveTaskBtn').textContent = '儲存子任務';
+      ['taskName','taskAssignee','taskStart','taskEnd'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('taskStatus').value = '未開始';
+      document.getElementById('taskProgress').value = 0;
+    }
+
+    function openTaskModal(projectId, taskId = null) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      editingTaskProjectId = projectId;
+      editingTaskId = taskId;
+      if (taskId !== null) {
+        const task = project.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        document.getElementById('taskModalTitle').textContent = '編輯子任務';
+        document.getElementById('saveTaskBtn').textContent = '儲存變更';
+        document.getElementById('taskName').value = task.name || '';
+        document.getElementById('taskAssignee').value = task.assignee || '';
+        document.getElementById('taskStart').value = task.start || '';
+        document.getElementById('taskEnd').value = task.end || '';
+        document.getElementById('taskStatus').value = task.status || '未開始';
+        document.getElementById('taskProgress').value = task.progress ?? 0;
+      } else {
+        resetTaskForm();
+        editingTaskProjectId = projectId;
+      }
+      openModal('taskModal');
+    }
+
+    function saveTask() {
+      const project = state.projects.find(p => p.id === editingTaskProjectId);
+      if (!project) return;
+      const name = document.getElementById('taskName').value.trim();
+      const assignee = document.getElementById('taskAssignee').value.trim();
+      const start = document.getElementById('taskStart').value;
+      const end = document.getElementById('taskEnd').value;
+      const status = document.getElementById('taskStatus').value;
+      const progress = Number(document.getElementById('taskProgress').value || 0);
+      if (!name) {
+        alert('請輸入子任務名稱。');
+        return;
+      }
+      if (editingTaskId !== null) {
+        const task = project.tasks.find(t => t.id === editingTaskId);
+        if (!task) return;
+        Object.assign(task, { name, assignee, start, end, status, progress });
+      } else {
+        const nextId = project.tasks.length ? Math.max(...project.tasks.map(t => t.id)) + 1 : 1;
+        project.tasks.push({ id: nextId, name, assignee, start, end, status, progress });
+      }
+      saveState();
+      closeModal('taskModal');
+      resetTaskForm();
+      renderAll();
+    }
+
+    function deleteTask(projectId, taskId) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      const task = project.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      if (!confirm(`確定要刪除子任務「${task.name}」嗎？`)) return;
+      project.tasks = project.tasks.filter(t => t.id !== taskId);
+      saveState();
+      renderAll();
+    }
+
+    function resetUrgentForm() {
+      editingUrgentProjectId = null;
+      editingUrgentId = null;
+      document.getElementById('urgentModalTitle').textContent = '新增臨時事項';
+      document.getElementById('saveUrgentBtn').textContent = '儲存臨時事項';
+      ['urgentTitle','urgentOwner','urgentDue'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('urgentLevel').value = '中';
+    }
+
+    function openUrgentModal(projectId, urgentId = null) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      editingUrgentProjectId = projectId;
+      editingUrgentId = urgentId;
+      if (urgentId !== null) {
+        const work = project.urgentWorks.find(w => w.id === urgentId);
+        if (!work) return;
+        document.getElementById('urgentModalTitle').textContent = '編輯臨時事項';
+        document.getElementById('saveUrgentBtn').textContent = '儲存變更';
+        document.getElementById('urgentTitle').value = work.title || '';
+        document.getElementById('urgentOwner').value = work.owner || '';
+        document.getElementById('urgentDue').value = work.due || '';
+        document.getElementById('urgentLevel').value = work.level || '中';
+      } else {
+        resetUrgentForm();
+        editingUrgentProjectId = projectId;
+      }
+      openModal('urgentModal');
+    }
+
+    function saveUrgentWork() {
+      const project = state.projects.find(p => p.id === editingUrgentProjectId);
+      if (!project) return;
+      const title = document.getElementById('urgentTitle').value.trim();
+      const owner = document.getElementById('urgentOwner').value.trim();
+      const due = document.getElementById('urgentDue').value;
+      const level = document.getElementById('urgentLevel').value;
+      if (!title) {
+        alert('請輸入臨時事項名稱。');
+        return;
+      }
+      if (editingUrgentId !== null) {
+        const work = project.urgentWorks.find(w => w.id === editingUrgentId);
+        if (!work) return;
+        Object.assign(work, { title, owner, due, level });
+      } else {
+        const nextId = project.urgentWorks.length ? Math.max(...project.urgentWorks.map(w => w.id)) + 1 : 1;
+        project.urgentWorks.push({ id: nextId, title, owner, due, level, done: false });
+      }
+      saveState();
+      closeModal('urgentModal');
+      resetUrgentForm();
+      renderAll();
+    }
+
+    function deleteUrgentWork(projectId, urgentId) {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      const work = project.urgentWorks.find(w => w.id === urgentId);
+      if (!work) return;
+      if (!confirm(`確定要刪除臨時事項「${work.title}」嗎？`)) return;
+      project.urgentWorks = project.urgentWorks.filter(w => w.id !== urgentId);
+      saveState();
       renderAll();
     }
 
@@ -1255,8 +1573,11 @@
     function setupEvents() {
       document.getElementById('searchInput').addEventListener('input', renderProjectList);
       document.getElementById('pmFilter').addEventListener('change', renderProjectList);
-      document.getElementById('openProjectModal').addEventListener('click', () => openModal('projectModal'));
-      document.getElementById('openMailModal').addEventListener('click', () => openModal('mailModal'));
+      document.getElementById('openProjectModal').addEventListener('click', () => {
+        resetProjectForm();
+        openModal('projectModal');
+      });
+      
       document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
       document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
