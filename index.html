@@ -562,6 +562,26 @@
       box-shadow: 0 10px 18px rgba(59, 130, 246, 0.16);
     }
 
+    .gantt-cell-bar.status-not-started {
+      background: linear-gradient(90deg, #cbd5e1 0%, #e2e8f0 100%);
+      box-shadow: 0 8px 16px rgba(148, 163, 184, 0.18);
+    }
+
+    .gantt-cell-bar.status-in-progress {
+      background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+      box-shadow: 0 10px 18px rgba(37, 99, 235, 0.18);
+    }
+
+    .gantt-cell-bar.status-completed {
+      background: linear-gradient(90deg, #16a34a 0%, #4ade80 100%);
+      box-shadow: 0 10px 18px rgba(22, 163, 74, 0.18);
+    }
+
+    .gantt-cell-bar.status-risk {
+      background: linear-gradient(90deg, #ea580c 0%, #fb923c 100%);
+      box-shadow: 0 10px 18px rgba(234, 88, 12, 0.18);
+    }
+
     .check-list,
     .recipient-list {
       display: flex;
@@ -1541,6 +1561,13 @@
       `;
     }
 
+    function getGanttStatusClass(status) {
+      if (status === '已完成') return 'status-completed';
+      if (status === '進行中') return 'status-in-progress';
+      if (status === '即將逾期' || status === '風險') return 'status-risk';
+      return 'status-not-started';
+    }
+
     function getDynamicGanttRows() {
       const rows = [];
       state.projects.forEach(project => {
@@ -1553,7 +1580,8 @@
               startDate: task.start || project.dueDate,
               endDate: task.end || project.dueDate,
               progress: Number(task.progress || 0),
-              type: 'task'
+              type: 'task',
+              ganttClass: getGanttStatusClass(task.status || '未開始')
             });
           });
         } else {
@@ -1564,7 +1592,8 @@
             startDate: project.dueDate || new Date().toISOString().slice(0, 10),
             endDate: project.dueDate || new Date().toISOString().slice(0, 10),
             progress: Number(project.progress || 0),
-            type: 'project'
+            type: 'project',
+            ganttClass: getGanttStatusClass(project.status || '未開始')
           });
         }
       });
@@ -1615,7 +1644,7 @@
             </div>
             ${Array.from({ length: totalCols }).map((_, index) => {
               const active = index >= startCol && index < startCol + span;
-              return `<div><div class="gantt-cell-bar ${active ? 'active' : ''}" title="${row.progress}%"></div></div>`;
+              return `<div><div class="gantt-cell-bar ${active ? `active ${row.ganttClass}` : ''}" title="${row.status}｜${row.progress}%"></div></div>`;
             }).join('')}
           </div>
         `;
