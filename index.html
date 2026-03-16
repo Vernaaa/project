@@ -898,8 +898,20 @@
           <h2 class="card-title">專案甘特圖</h2>
           <div class="card-desc">以週為單位檢視主要工作排程，後續也可再擴充拖拉式調整。</div>
         </div>
-        <div class="card-body gantt-wrap">
+        <div class="card-body">
+          <div class="soft-box" style="margin-bottom:16px;">
+            <div class="section-title">甘特圖顏色說明</div>
+            <div class="badges" style="gap:10px;">
+              <span class="badge" style="background: linear-gradient(90deg, #a78bfa 0%, #c4b5fd 100%); color:#4c1d95;">未開始</span>
+              <span class="badge" style="background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%); color:white;">進行中</span>
+              <span class="badge" style="background: linear-gradient(90deg, #16a34a 0%, #4ade80 100%); color:white;">已完成</span>
+              <span class="badge" style="background: linear-gradient(90deg, #ea580c 0%, #fb923c 100%); color:white;">風險 / 即將逾期</span>
+            </div>
+            <div class="muted" style="margin-top:10px; font-size:13px;">甘特圖條狀顏色會依任務或專案目前狀態自動更新，方便快速辨識整體排程健康度。</div>
+          </div>
+          <div class="gantt-wrap">
           <div class="gantt" id="ganttBoard"></div>
+          </div>
         </div>
       </div>
     </section>
