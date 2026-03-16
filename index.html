@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM 專案進度追蹤中心</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --line: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #0f172a;
+      --primary-soft: #e2e8f0;
+      --success: #dcfce7;
+      --success-text: #166534;
+      --warning: #fef3c7;
+      --warning-text: #92400e;
+      --danger: #fee2e2;
+      --danger-text: #b91c1c;
+      --blue-soft: #dbeafe;
+      --blue-text: #1d4ed8;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero, .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 880px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      padding: 22px;
+    }
+
+    .stat-title {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stat-value {
+      margin-top: 10px;
+      font-size: 34px;
+      font-weight: 700;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 8px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      border: none;
+      background: transparent;
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 16px;
+    }
+
+    .card-header {
+      padding: 22px 22px 8px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .card-desc {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card-body {
+      padding: 14px 22px 22px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+      color: var(--text);
+    }
+
+    textarea { min-height: 110px; resize: vertical; }
+
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 700px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .project-item {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 16px;
+      cursor: pointer;
+      background: white;
+      transition: .2s ease;
+    }
+
+    .project-item.active {
+      border-color: var(--primary);
+      background: #f8fafc;
+    }
+
+    .project-item:hover { transform: translateY(-1px); }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge-outline {
+      background: white;
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .status-done { background: var(--success); color: var(--success-text); }
+    .status-progress { background: var(--blue-soft); color: var(--blue-text); }
+    .status-pending { background: var(--primary-soft); color: #334155; }
+    .status-risk { background: var(--warning); color: var(--warning-text); }
+    .health-normal { background: var(--success); color: var(--success-text); }
+    .health-attn { background: var(--warning); color: var(--warning-text); }
+    .health-danger { background: var(--danger); color: var(--danger-text); }
+
+    .progress-wrap {
+      width: 100%;
+      max-width: 260px;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-value {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+    }
+
+    .detail-box {
+      background: #f8fafc;
+      border-radius: 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .mini-box {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+
+    .mini-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-value {
+      margin-top: 6px;
+      font-weight: 700;
+    }
+
+    .risk-box {
+      margin-top: 14px;
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 16px;
+      padding: 14px;
+      line-height: 1.7;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .gantt-wrap {
+      overflow-x: auto;
+    }
+
+    .gantt {
+      min-width: 900px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .gantt-head, .gantt-row {
+      display: grid;
+      grid-template-columns: 220px repeat(9, minmax(60px, 1fr));
+    }
+
+    .gantt-head > div {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .gantt-row > div {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      background: white;
+    }
+
+    .gantt-cell-bar {
+      height: 30px;
+      border-radius: 10px;
+      background: #e5e7eb;
+    }
+
+    .gantt-cell-bar.active { background: var(--primary); }
+
+    .urgent-grid, .setting-grid, .chart-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .urgent-grid { grid-template-columns: repeat(3, 1fr); }
+    .setting-grid { grid-template-columns: 0.95fr 1.05fr; }
+    .chart-grid { grid-template-columns: repeat(3, 1fr); }
+
+    .urgent-item, .recipient-item, .feature-item, .event-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      padding: 14px;
+    }
+
+    .soft-box {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      background: white;
+    }
+
+    .recipient-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .recipient-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 8px;
+    }
+
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 14px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .chart-box {
+      text-align: center;
+      padding: 18px;
+    }
+
+    .chart-value {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 8px 0;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      width: min(720px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: white;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+      padding: 22px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .modal-close {
+      border: none;
+      background: #f1f5f9;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1100px) {
+      .stats-grid, .grid-2, .panel-grid, .urgent-grid, .setting-grid, .detail-grid, .chart-grid, .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .container { padding: 16px; }
+      h1 { font-size: 26px; }
+      .form-grid, .recipient-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">PM 專案進度追蹤中心</div>
+          <h1>專案、子任務、臨時工作，一個畫面全抓住</h1>
+          <p>
+            整合專案總覽、子任務追蹤、臨時事項、甘特圖、風險提醒、Email 通知與儀表板，讓每位 PM 能更有效控管時程、資源與風險。
+            這個版本採用純 HTML / CSS / JavaScript，可直接放到 GitHub Pages 使用，不需要先裝一堆前端框架，先求能上線，再求宇宙最強。
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="openProjectModal">＋ 新增專案</button>
+          <button class="btn btn-outline" id="openMailModal">提醒設定</button>
+          <button class="btn btn-outline" id="exportJsonBtn">匯出 JSON</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-grid" id="statsGrid"></section>
+
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">專案進度儀表板</h2>
+          <div class="card-desc">快速掌握每個專案的完成率與整體健康度。</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-grid" id="projectProgressCards"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">任務分布</h2>
+          <div class="card-desc">這裡先用可部署版摘要卡片呈現，後續可再改成圖表套件。</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-grid" id="milestoneCards"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="projects">專案總覽</button>
+      <button class="tab-btn" data-tab="gantt">甘特圖</button>
+      <button class="tab-btn" data-tab="urgent">臨時事項</button>
+      <button class="tab-btn" data-tab="settings">提醒與設定</button>
+    </div>
+
+    <section class="tab-panel active" id="tab-projects">
+      <div class="panel-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">專案列表</h2>
+            <div class="card-desc">支援關鍵字與 PM 篩選。</div>
+          </div>
+          <div class="card-body">
+            <div class="filters">
+              <input id="searchInput" placeholder="搜尋專案編號、名稱、客戶、負責人" />
+              <select id="pmFilter" style="max-width: 180px;">
+                <option value="all">全部 PM</option>
+              </select>
+            </div>
+            <div class="project-list" id="projectList"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">專案明細</h2>
+            <div class="card-desc">子任務、風險、提醒與截止日期一併顯示。</div>
+          </div>
+          <div class="card-body" id="projectDetail"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="tab-gantt">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">甘特圖</h2>
+          <div class="card-desc">目前為靜態週期檢視版，可再擴充為拖拉與依賴關係版本。</div>
+        </div>
+        <div class="card-body gantt-wrap">
+          <div class="gantt" id="ganttBoard"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="tab-urgent">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">臨時事項 / 插單工作</h2>
+          <div class="card-desc">把臨時火線支援也納入系統追蹤，避免看板歲月靜好，PM 內心兵荒馬亂。</div>
+        </div>
+        <div class="card-body">
+          <div class="urgent-grid" id="urgentGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="tab-settings">
+      <div class="setting-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">提醒與通知設定</h2>
+            <div class="card-desc">支援多位收件人與多個通知節點。</div>
+          </div>
+          <div class="card-body">
+            <div class="soft-box" style="margin-bottom:16px;">
+              <div class="section-title">系統提醒規則</div>
+              <div class="check-list" id="ruleList"></div>
+            </div>
+
+            <div class="soft-box">
+              <div class="row-between">
+                <div class="section-title" style="margin-bottom:0;">收件人與通知節點</div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn btn-outline" onclick="addRecipient('to')">＋ 新增 To</button>
+                  <button class="btn btn-outline" onclick="addRecipient('cc')">＋ 新增 Cc</button>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <div class="section-title">主要收件人 To</div>
+                <div class="recipient-list" id="toList"></div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <div class="section-title">副本收件人 Cc</div>
+                <div class="recipient-list" id="ccList"></div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <div class="section-title">通知節點</div>
+                <div class="feature-grid" id="eventList"></div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <div class="section-title">通知內容範本</div>
+                <textarea id="messageTemplate"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">建議擴充功能</h2>
+            <div class="card-desc">這些功能能讓系統從看板升級為真正的專案作戰中樞。</div>
+          </div>
+          <div class="card-body">
+            <div class="feature-grid" id="featureGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="projectModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin:0;">建立新專案</h3>
+          <div class="muted">新增後會暫存在瀏覽器 localStorage。</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('projectModal')">×</button>
+      </div>
+      <div class="form-grid">
+        <input id="newId" placeholder="專案編號" />
+        <input id="newName" placeholder="專案名稱" />
+        <input id="newPm" placeholder="PM" />
+        <input id="newOwner" placeholder="負責人" />
+        <input id="newClient" placeholder="客戶 / 部門" />
+        <input id="newDueDate" type="date" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="closeModal('projectModal')">取消</button>
+        <button class="btn btn-primary" onclick="createProject()">建立專案</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="mailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin:0;">Email 提醒邏輯建議</h3>
+          <div class="muted">這裡說明 GitHub Pages 版本與正式寄信版本的差異。</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('mailModal')">×</button>
+      </div>
+      <div class="soft-box" style="margin-bottom:12px;">
+        <div class="section-title">目前 GitHub Pages 版本可做到</div>
+        <div class="muted">
+          1. 管理收件人與提醒規則<br>
+          2. 將設定儲存在瀏覽器 localStorage<br>
+          3. 匯出 JSON 供後續串接後端使用
+        </div>
+      </div>
+      <div class="soft-box">
+        <div class="section-title">若要真的自動寄信，建議追加</div>
+        <div class="muted">
+          1. 後端 API（Node.js / Apps Script / Supabase Edge Function）<br>
+          2. 排程服務（cron）<br>
+          3. 郵件服務（Resend / SendGrid / Gmail SMTP）<br><br>
+          也就是說，GitHub Pages 可以當前台入口；真正寄信要靠後端，不然瀏覽器自己不會長出郵差。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'pm-dashboard-gh-pages-v1';
+
+    const defaultData = {
+      projects: [
+        {
+          id: 'P-001',
+          name: '台銀 BIS OTP 模組整合',
+          pm: 'Verna',
+          owner: 'Amy',
+          client: '台灣銀行',
+          status: '進行中',
+          progress: 72,
+          priority: '高',
+          dueDate: '2026-04-10',
+          health: '注意',
+          risk: 'API 閘道串接延後，可能影響整體測試時程',
+          emailReminder: true,
+          tasks: [
+            { id: 1, name: '完成測試區部署', assignee: 'Jack', start: '2026-03-15', end: '2026-03-20', progress: 90, status: '進行中' },
+            { id: 2, name: '推播 OTP challenge 參數驗證', assignee: 'Amy', start: '2026-03-18', end: '2026-03-25', progress: 65, status: '進行中' },
+            { id: 3, name: '教育訓練資料彙整', assignee: 'Verna', start: '2026-03-26', end: '2026-03-30', progress: 20, status: '未開始' },
+          ],
+          urgentWorks: [
+            { id: 1, title: '客戶臨時要求補充報表欄位', owner: 'Verna', due: '2026-03-19', level: '高', done: false },
+            { id: 2, title: '確認正式備援環境佈署順序', owner: 'Amy', due: '2026-03-22', level: '中', done: false },
+          ],
+        },
+        {
+          id: 'P-002',
+          name: '企業戶換機流程優化',
+          pm: 'Maggie',
+          owner: 'Jack',
+          client: '企業金融客戶',
+          status: '即將逾期',
+          progress: 58,
+          priority: '高',
+          dueDate: '2026-03-28',
+          health: '風險',
+          risk: '文件待確認，測試案例尚未完整覆蓋',
+          emailReminder: true,
+          tasks: [
+            { id: 1, name: '換機碼流程修正', assignee: 'Jack', start: '2026-03-10', end: '2026-03-18', progress: 95, status: '進行中' },
+            { id: 2, name: '測試報告產出', assignee: 'Verna', start: '2026-03-19', end: '2026-03-24', progress: 45, status: '進行中' },
+            { id: 3, name: '客戶確認會議', assignee: 'Maggie', start: '2026-03-25', end: '2026-03-26', progress: 0, status: '未開始' },
+          ],
+          urgentWorks: [
+            { id: 1, title: '補送 user list 給客戶', owner: 'Verna', due: '2026-03-18', level: '高', done: false },
+          ],
+        },
+        {
+          id: 'P-003',
+          name: '內部 PM 作業指引數位化',
+          pm: 'Verna',
+          owner: 'Verna',
+          client: '內部專案',
+          status: '已完成',
+          progress: 100,
+          priority: '中',
+          dueDate: '2026-03-05',
+          health: '正常',
+          risk: '—',
+          emailReminder: false,
+          tasks: [
+            { id: 1, name: '需求盤點', assignee: 'Verna', start: '2026-02-20', end: '2026-02-24', progress: 100, status: '已完成' },
+            { id: 2, name: '初版畫面設計', assignee: 'Verna', start: '2026-02-25', end: '2026-02-28', progress: 100, status: '已完成' },
+            { id: 3, name: '使用者回饋調整', assignee: 'Verna', start: '2026-03-01', end: '2026-03-05', progress: 100, status: '已完成' },
+          ],
+          urgentWorks: [],
+        },
+      ],
+      ganttRows: [
+        { name: '需求確認', start: 0, span: 2, owner: 'Verna', status: '已完成' },
+        { name: 'API 串接', start: 2, span: 3, owner: 'Amy', status: '進行中' },
+        { name: '測試驗證', start: 5, span: 2, owner: 'Jack', status: '未開始' },
+        { name: 'UAT / 教育訓練', start: 7, span: 2, owner: 'Verna', status: '未開始' },
+      ],
+      monthHeaders: ['W1','W2','W3','W4','W5','W6','W7','W8','W9'],
+      milestoneData: [
+        { name: '本週到期', value: 6 },
+        { name: '進行中', value: 13 },
+        { name: '已完成', value: 8 },
+      ],
+      notificationConfig: {
+        to: ['pm@company.com', 'projectlead@company.com'],
+        cc: ['主管@company.com', 'team@company.com'],
+        triggerEvents: [
+          '專案到期前 7 天提醒',
+          '專案到期前 3 天提醒',
+          '專案到期前 1 天提醒',
+          '子任務延遲 2 天以上通知',
+          '新增高優先臨時事項即時通知',
+          '每日 9:00 待辦摘要'
+        ],
+        rules: [
+          '專案到期前 7 天自動寄送提醒',
+          '子任務延遲 2 天以上時通知 PM 與負責人',
+          '臨時事項新增後立即寄送摘要',
+          '每日上午 9:00 寄送個人待辦總表',
+        ],
+        template: '您好，以下為您今日的專案提醒摘要：\n1. 即將到期項目\n2. 延遲子任務\n3. 臨時事項待處理清單'
+      },
+      features: [
+        ['里程碑管理', '支援關鍵節點、驗收點與版本發佈日期設定'],
+        ['風險與議題台帳', '獨立管理 issue、risk、owner、應變策略與追蹤狀態'],
+        ['會議記錄串接', '會議待辦可直接轉成任務，避免會後又失憶'],
+        ['權限管理', '區分 PM、主管、工程師、客戶檢視權限'],
+        ['檔案與附件中心', '集中管理測試報告、規格書、會議簡報與簽核文件'],
+        ['工時與負載分析', '看出誰已滿載、誰還有餘裕，避免資源錯配'],
+        ['跨專案總覽', '高階主管可查看全部專案健康度與資源使用情況'],
+        ['通知記錄中心', '追蹤提醒是否已寄出、誰已讀、誰還在裝沒看到'],
+      ]
+    };
+
+    let state = loadState();
+    let selectedProjectId = state.projects[0]?.id || null;
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : structuredClone(defaultData);
+      } catch {
+        return structuredClone(defaultData);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function structuredClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function getStatusClass(status) {
+      if (status === '已完成') return 'status-done';
+      if (status === '進行中') return 'status-progress';
+      if (status === '即將逾期') return 'status-risk';
+      return 'status-pending';
+    }
+
+    function getHealthClass(health) {
+      if (health === '正常') return 'health-normal';
+      if (health === '注意') return 'health-attn';
+      return 'health-danger';
+    }
+
+    function getStats() {
+      return {
+        total: state.projects.length,
+        inProgress: state.projects.filter(p => p.status === '進行中').length,
+        overdueRisk: state.projects.filter(p => p.status === '即將逾期' || p.health === '風險').length,
+        urgentCount: state.projects.reduce((sum, p) => sum + p.urgentWorks.filter(w => !w.done).length, 0),
+      };
+    }
+
+    function getFilteredProjects() {
+      const keyword = document.getElementById('searchInput')?.value?.trim().toLowerCase() || '';
+      const pmFilter = document.getElementById('pmFilter')?.value || 'all';
+      return state.projects.filter(p => {
+        const target = [p.id, p.name, p.pm, p.owner, p.client].join(' ').toLowerCase();
+        const hitKeyword = !keyword || target.includes(keyword);
+        const hitPm = pmFilter === 'all' || p.pm === pmFilter;
+        return hitKeyword && hitPm;
+      });
+    }
+
+    function renderStats() {
+      const stats = getStats();
+      const items = [
+        ['專案總數', stats.total],
+        ['進行中專案', stats.inProgress],
+        ['風險 / 即將逾期', stats.overdueRisk],
+        ['待處理臨時事項', stats.urgentCount],
+      ];
+      document.getElementById('statsGrid').innerHTML = items.map(([label, value]) => `
+        <div class="card stat-card">
+          <div class="stat-title">${label}</div>
+          <div class="stat-value">${value}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderCharts() {
+      document.getElementById('projectProgressCards').innerHTML = state.projects.map(project => `
+        <div class="card chart-box">
+          <div class="muted">${project.id}</div>
+          <div style="font-weight:700; margin-top:6px;">${project.name}</div>
+          <div class="chart-value">${project.progress}%</div>
+          <div class="progress-bar"><div class="progress-value" style="width:${project.progress}%"></div></div>
+        </div>
+      `).join('');
+
+      document.getElementById('milestoneCards').innerHTML = state.milestoneData.map(item => `
+        <div class="card chart-box">
+          <div class="muted">任務摘要</div>
+          <div style="font-weight:700; margin-top:6px;">${item.name}</div>
+          <div class="chart-value">${item.value}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderPmFilter() {
+      const select = document.getElementById('pmFilter');
+      const current = select.value || 'all';
+      const pms = [...new Set(state.projects.map(p => p.pm).filter(Boolean))];
+      select.innerHTML = '<option value="all">全部 PM</option>' + pms.map(pm => `<option value="${pm}">${pm}</option>`).join('');
+      select.value = pms.includes(current) || current === 'all' ? current : 'all';
+    }
+
+    function renderProjectList() {
+      const filtered = getFilteredProjects();
+      if (!filtered.find(p => p.id === selectedProjectId)) {
+        selectedProjectId = filtered[0]?.id || null;
+      }
+      const list = document.getElementById('projectList');
+      if (!filtered.length) {
+        list.innerHTML = '<div class="muted">找不到符合條件的專案。</div>';
+        renderProjectDetail();
+        return;
+      }
+      list.innerHTML = filtered.map(project => `
+        <div class="project-item ${project.id === selectedProjectId ? 'active' : ''}" onclick="selectProject('${project.id}')">
+          <div class="row-between">
+            <div>
+              <div class="badges">
+                <strong>${project.name}</strong>
+                <span class="badge badge-outline">${project.id}</span>
+                <span class="badge ${getStatusClass(project.status)}">${project.status}</span>
+                <span class="badge ${getHealthClass(project.health)}">${project.health}</span>
+              </div>
+              <div class="meta">PM：${project.pm}｜負責人：${project.owner}｜客戶：${project.client}</div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-top"><span>完成率</span><strong>${project.progress}%</strong></div>
+              <div class="progress-bar"><div class="progress-value" style="width:${project.progress}%"></div></div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      renderProjectDetail();
+    }
+
+    function renderProjectDetail() {
+      const target = state.projects.find(p => p.id === selectedProjectId);
+      const detail = document.getElementById('projectDetail');
+      if (!target) {
+        detail.innerHTML = '<div class="muted">找不到符合條件的專案。</div>';
+        return;
+      }
+      detail.innerHTML = `
+        <div class="detail-box">
+          <div class="row-between">
+            <div>
+              <h3 style="margin:0 0 6px;">${target.name}</h3>
+              <div class="muted">${target.id}｜客戶：${target.client}</div>
+            </div>
+            <div class="badges">
+              <span class="badge ${getStatusClass(target.status)}">${target.status}</span>
+              <span class="badge badge-outline">優先度：${target.priority}</span>
+              <span class="badge badge-outline">截止：${target.dueDate}</span>
+            </div>
+          </div>
+          <div class="detail-grid">
+            <div class="mini-box"><div class="mini-label">專案經理</div><div class="mini-value">${target.pm}</div></div>
+            <div class="mini-box"><div class="mini-label">主要負責人</div><div class="mini-value">${target.owner}</div></div>
+            <div class="mini-box"><div class="mini-label">提醒機制</div><div class="mini-value">${target.emailReminder ? '已啟用 Email 提醒' : '未啟用'}</div></div>
+          </div>
+          <div class="risk-box"><strong>風險提醒</strong><br>${target.risk}</div>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="section-title">子任務追蹤</div>
+          <table>
+            <thead>
+              <tr>
+                <th>任務</th>
+                <th>負責人</th>
+                <th>期間</th>
+                <th>狀態</th>
+                <th>進度</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${target.tasks.map(task => `
+                <tr>
+                  <td><strong>${task.name}</strong></td>
+                  <td>${task.assignee}</td>
+                  <td>${task.start} ~ ${task.end}</td>
+                  <td><span class="badge ${getStatusClass(task.status)}">${task.status}</span></td>
+                  <td>
+                    <div class="progress-wrap" style="max-width:180px;">
+                      <div class="progress-top"><span></span><strong>${task.progress}%</strong></div>
+                      <div class="progress-bar"><div class="progress-value" style="width:${task.progress}%"></div></div>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderGantt() {
+      const board = document.getElementById('ganttBoard');
+      board.innerHTML = `
+        <div class="gantt-head">
+          <div>任務 / 週別</div>
+          ${state.monthHeaders.map(m => `<div>${m}</div>`).join('')}
+        </div>
+        ${state.ganttRows.map(row => `
+          <div class="gantt-row">
+            <div>
+              <strong>${row.name}</strong><br>
+              <span class="muted">${row.owner}｜${row.status}</span>
+            </div>
+            ${state.monthHeaders.map((_, idx) => `
+              <div><div class="gantt-cell-bar ${idx >= row.start && idx < row.start + row.span ? 'active' : ''}"></div></div>
+            `).join('')}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function renderUrgent() {
+      const grid = document.getElementById('urgentGrid');
+      grid.innerHTML = state.projects.map(project => `
+        <div class="urgent-item">
+          <div class="row-between">
+            <div>
+              <strong>${project.name}</strong>
+              <div class="muted">${project.id}</div>
+            </div>
+            <span class="badge ${getHealthClass(project.health)}">${project.health}</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+            ${project.urgentWorks.length ? project.urgentWorks.map(work => `
+              <div class="urgent-item" style="padding:12px; background:#fff;">
+                <div class="row-between">
+                  <strong>${work.title}</strong>
+                  <span class="badge badge-outline">${work.level}</span>
+                </div>
+                <div class="meta">負責：${work.owner}｜到期：${work.due}</div>
+              </div>
+            `).join('') : '<div class="muted">目前沒有臨時事項。</div>'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderSettings() {
+      document.getElementById('ruleList').innerHTML = state.notificationConfig.rules.map(rule => `
+        <label class="check-item"><input type="checkbox" checked disabled /> ${rule}</label>
+      `).join('');
+
+      document.getElementById('toList').innerHTML = state.notificationConfig.to.map((email, idx) => `
+        <div class="recipient-row">
+          <input value="${email}" onchange="updateRecipient('to', ${idx}, this.value)" placeholder="主要收件人 ${idx + 1}" />
+          <button class="btn btn-outline" onclick="removeRecipient('to', ${idx})">移除</button>
+        </div>
+      `).join('');
+
+      document.getElementById('ccList').innerHTML = state.notificationConfig.cc.map((email, idx) => `
+        <div class="recipient-row">
+          <input value="${email}" onchange="updateRecipient('cc', ${idx}, this.value)" placeholder="副本收件人 ${idx + 1}" />
+          <button class="btn btn-outline" onclick="removeRecipient('cc', ${idx})">移除</button>
+        </div>
+      `).join('');
+
+      document.getElementById('eventList').innerHTML = state.notificationConfig.triggerEvents.map(item => `
+        <div class="event-item">${item}</div>
+      `).join('');
+
+      document.getElementById('messageTemplate').value = state.notificationConfig.template || '';
+      document.getElementById('messageTemplate').onchange = (e) => {
+        state.notificationConfig.template = e.target.value;
+        saveState();
+      };
+
+      document.getElementById('featureGrid').innerHTML = state.features.map(([title, desc]) => `
+        <div class="feature-item">
+          <strong>${title}</strong>
+          <div class="meta">${desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectProject(id) {
+      selectedProjectId = id;
+      renderProjectList();
+    }
+
+    function updateRecipient(type, index, value) {
+      state.notificationConfig[type][index] = value;
+      saveState();
+    }
+
+    function addRecipient(type) {
+      state.notificationConfig[type].push('');
+      saveState();
+      renderSettings();
+    }
+
+    function removeRecipient(type, index) {
+      if (state.notificationConfig[type].length === 1) return;
+      state.notificationConfig[type].splice(index, 1);
+      saveState();
+      renderSettings();
+    }
+
+    function createProject() {
+      const id = document.getElementById('newId').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const pm = document.getElementById('newPm').value.trim();
+      const owner = document.getElementById('newOwner').value.trim();
+      const client = document.getElementById('newClient').value.trim();
+      const dueDate = document.getElementById('newDueDate').value;
+
+      if (!id || !name) {
+        alert('請至少輸入專案編號與專案名稱。');
+        return;
+      }
+
+      state.projects.unshift({
+        id,
+        name,
+        pm,
+        owner,
+        client,
+        status: '未開始',
+        progress: 0,
+        priority: '中',
+        dueDate,
+        health: '正常',
+        risk: '—',
+        emailReminder: true,
+        tasks: [],
+        urgentWorks: [],
+      });
+
+      selectedProjectId = id;
+      saveState();
+      closeModal('projectModal');
+      ['newId', 'newName', 'newPm', 'newOwner', 'newClient', 'newDueDate'].forEach(id => document.getElementById(id).value = '');
+      renderAll();
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pm-dashboard-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        });
+      });
+    }
+
+    function setupEvents() {
+      document.getElementById('searchInput').addEventListener('input', renderProjectList);
+      document.getElementById('pmFilter').addEventListener('change', renderProjectList);
+      document.getElementById('openProjectModal').addEventListener('click', () => openModal('projectModal'));
+      document.getElementById('openMailModal').addEventListener('click', () => openModal('mailModal'));
+      document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.classList.remove('active');
+        });
+      });
+    }
+
+    function renderAll() {
+      renderPmFilter();
+      renderStats();
+      renderCharts();
+      renderProjectList();
+      renderGantt();
+      renderUrgent();
+      renderSettings();
+    }
+
+    setupTabs();
+    setupEvents();
+    renderAll();
+  </script>
+</body>
+</html>
