@@ -828,6 +828,7 @@
           <button class="btn btn-primary" id="openProjectModal">＋ 新增專案</button>
           <button class="btn btn-outline" id="importJsonBtn">匯入 JSON</button>
           <button class="btn btn-outline" id="exportJsonBtn">匯出 JSON</button>
+          <span id="lastBackupTime" class="muted" style="margin-left:10px;font-size:12px;"></span>
           <button class="btn btn-outline" id="resetDemoBtn">重置示範資料</button>
           <input id="importJsonInput" type="file" accept="application/json" style="display:none;" />
         </div>
@@ -2286,19 +2287,31 @@
       renderAll();
     }
 
+    function formatDateForFile(d){
+      const pad=n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+    }
+
     function exportJson() {
+      const now = new Date();
       const exportPayload = {
         ...state,
         version: DATA_VERSION,
-        exportedAt: new Date().toISOString()
+        exportedAt: now.toISOString()
       };
       const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'pm-dashboard-data.json';
+      link.download = `pm-dashboard-data-${formatDateForFile(now)}.json`;
       link.click();
       URL.revokeObjectURL(url);
+
+      // 顯示最後備份時間
+      const el = document.getElementById('lastBackupTime');
+      if (el) {
+        el.textContent = `最後備份：${now.toLocaleString()}`;
+      }
     }
 
     function importJsonFile(file) {
