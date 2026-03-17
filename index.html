@@ -1213,6 +1213,11 @@
           <small class="muted">選擇此排程要顯示的日期。</small>
         </div>
         <div>
+          <label for="calendarEventTime">時間</label>
+          <input id="calendarEventTime" type="time" step="60" />
+          <small class="muted">可精確記錄到幾點幾分，例如 14:30。</small>
+        </div>
+        <div>
           <label for="calendarEventType">類型</label>
           <select id="calendarEventType">
             <option value="manual">一般排程</option>
@@ -1798,9 +1803,10 @@
         events.push({
           id: event.id,
           date: event.date,
+          time: event.time || '',
           type: getManualEventClass(event.eventType),
           title: event.title,
-          meta: `${getManualEventTypeLabel(event.eventType)}｜${event.owner || '未指定'}${event.note ? `｜${event.note}` : ''}`,
+          meta: `${getManualEventTypeLabel(event.eventType)}｜${event.owner || '未指定'}${event.time ? `｜${event.time}` : ''}${event.note ? `｜${event.note}` : ''}`,
           source: 'manual',
           rawType: event.eventType
         });
@@ -1808,7 +1814,11 @@
       return events.filter(event => {
         const d = new Date(event.date);
         return d.getFullYear() === year && d.getMonth() === month;
-      }).sort((a, b) => new Date(a.date) - new Date(b.date));
+      }).sort((a, b) => {
+        const da = new Date(`${a.date}T${a.time || '00:00'}`);
+        const db = new Date(`${b.date}T${b.time || '00:00'}`);
+        return da - db;
+      });
     }
 
     function renderCalendar() {
@@ -1864,7 +1874,7 @@
           <div class="calendar-cell ${isOtherMonth ? 'is-other-month' : ''} ${isToday ? 'is-today' : ''}">
             <div class="calendar-date">${displayDate}</div>
             <div class="calendar-events">
-              ${items.slice(0, 3).map(item => `<div class="calendar-event ${item.type}">${item.title}</div>`).join('')}
+              ${items.slice(0, 3).map(item => `<div class="calendar-event ${item.type}">${item.time ? `${item.time} ` : ''}${item.title}</div>`).join('')}
               ${items.length > 3 ? `<div class="calendar-event">還有 ${items.length - 3} 項</div>` : ''}
             </div>
           </div>
@@ -1880,7 +1890,7 @@
           <div class="calendar-list-item">
             <div class="row-between">
               <strong>${item.title}</strong>
-              <span class="badge ${item.type === 'urgent' ? 'status-risk' : item.type === 'task' ? 'status-progress' : 'badge-outline'}">${item.date}</span>
+              <span class="badge ${item.type === 'urgent' ? 'status-risk' : item.type === 'task' ? 'status-progress' : 'badge-outline'}">${item.date}${item.time ? ` ${item.time}` : ''}</span>
             </div>
             <div class="meta">${item.meta}</div>
             ${item.source === 'manual' ? `<div class="inline-actions" style="margin-top:10px;"><button class="btn btn-outline" onclick="openCalendarEventModal(${item.id})">編輯</button><button class="btn btn-danger" onclick="deleteCalendarEvent(${item.id})">刪除</button></div>` : ''}
@@ -1893,7 +1903,7 @@
       editingCalendarEventId = null;
       document.getElementById('calendarEventModalTitle').textContent = '新增行事曆排程';
       document.getElementById('saveCalendarEventBtn').textContent = '儲存排程';
-      ['calendarEventTitle','calendarEventDate','calendarEventOwner','calendarEventNote'].forEach(id => {
+      ['calendarEventTitle','calendarEventDate','calendarEventTime','calendarEventOwner','calendarEventNote'].forEach(id => {
         document.getElementById(id).value = '';
       });
       document.getElementById('calendarEventType').value = 'manual';
@@ -1910,6 +1920,7 @@
         document.getElementById('calendarEventTitle').value = event.title || '';
         document.getElementById('calendarEventDate').value = event.date || '';
         document.getElementById('calendarEventType').value = event.eventType || 'manual';
+        document.getElementById('calendarEventTime').value = event.time || '';
         document.getElementById('calendarEventOwner').value = event.owner || '';
         document.getElementById('calendarEventNote').value = event.note || '';
       }
@@ -1920,6 +1931,7 @@
       const title = document.getElementById('calendarEventTitle').value.trim();
       const date = document.getElementById('calendarEventDate').value;
       const eventType = document.getElementById('calendarEventType').value;
+      const time = document.getElementById('calendarEventTime').value;
       const owner = document.getElementById('calendarEventOwner').value.trim();
       const note = document.getElementById('calendarEventNote').value.trim();
       if (!title || !date) {
@@ -1930,10 +1942,10 @@
       if (editingCalendarEventId !== null) {
         const target = state.customCalendarEvents.find(item => item.id === editingCalendarEventId);
         if (!target) return;
-        Object.assign(target, { title, date, eventType, owner, note });
+        Object.assign(target, { title, date, time, eventType, owner, note });
       } else {
         const nextId = state.customCalendarEvents.length ? Math.max(...state.customCalendarEvents.map(item => item.id)) + 1 : 1;
-        state.customCalendarEvents.push({ id: nextId, title, date, eventType, owner, note });
+        state.customCalendarEvents.push({ id: nextId, title, date, time, eventType
       }
       saveState();
       closeModal('calendarEventModal');
