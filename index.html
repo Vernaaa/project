@@ -826,8 +826,10 @@
         </div>
         <div class="toolbar">
           <button class="btn btn-primary" id="openProjectModal">＋ 新增專案</button>
+          <button class="btn btn-outline" id="importJsonBtn">匯入 JSON</button>
           <button class="btn btn-outline" id="exportJsonBtn">匯出 JSON</button>
           <button class="btn btn-outline" id="resetDemoBtn">重置示範資料</button>
+          <input id="importJsonInput" type="file" accept="application/json" style="display:none;" />
         </div>
       </div>
     </section>
@@ -1248,9 +1250,11 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'pm-dashboard-single-file-v2';
+    const STORAGE_KEY = 'pm-dashboard-single-file-v3';
+    const DATA_VERSION = 4;
 
     const defaultData = {
+      version: DATA_VERSION,
       projects: [
         {
           id: 'P-001',
@@ -1356,10 +1360,67 @@
       return JSON.parse(JSON.stringify(obj));
     }
 
+    function migrateState(raw) {
+      const base = deepClone(defaultData);
+      const incoming = raw && typeof raw === 'object' ? raw : {};
+      const merged = { ...base, ...incoming };
+
+      merged.version = DATA_VERSION;
+      merged.projects = Array.isArray(incoming.projects) ? incoming.projects : base.projects;
+      merged.rules = Array.isArray(incoming.rules) ? incoming.rules : base.rules;
+      merged.features = Array.isArray(incoming.features) ? incoming.features : base.features;
+      merged.customCalendarEvents = Array.isArray(incoming.customCalendarEvents) ? incoming.customCalendarEvents : [];
+
+      merged.projects = merged.projects.map((project, pIndex) => ({
+        id: project.id || `P-${String(pIndex + 1).padStart(3, '0')}`,
+        name: project.name || '未命名專案',
+        pm: project.pm || '',
+        owner: project.owner || '',
+        client: project.client || '',
+        status: project.status || '未開始',
+        progress: Number(project.progress || 0),
+        priority: project.priority || '中',
+        dueDate: project.dueDate || '',
+        health: project.health || '正常',
+        risk: project.risk || '—',
+        tasks: Array.isArray(project.tasks) ? project.tasks.map((task, tIndex) => ({
+          id: task.id ?? tIndex + 1,
+          name: task.name || '未命名任務',
+          assignee: task.assignee || '',
+          start: task.start || '',
+          end: task.end || '',
+          progress: Number(task.progress || 0),
+          status: task.status || '未開始',
+          note: task.note || ''
+        })) : [],
+        urgentWorks: Array.isArray(project.urgentWorks) ? project.urgentWorks.map((work, wIndex) => ({
+          id: work.id ?? wIndex + 1,
+          title: work.title || '未命名事項',
+          owner: work.owner || '',
+          due: work.due || '',
+          level: work.level || '中',
+          done: Boolean(work.done)
+        })) : []
+      }));
+
+      merged.customCalendarEvents = merged.customCalendarEvents.map((event, index) => ({
+        id: event.id ?? index + 1,
+        title: event.title || '未命名排程',
+        date: event.date || '',
+        time: event.time || '',
+        eventType: event.eventType || 'manual',
+        owner: event.owner || '',
+        note: event.note || ''
+      }));
+
+      return merged;
+    }
+
     function loadState() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : deepClone(defaultData);
+        const parsed = saved ? JSON.parse(saved) : deepClone(defaultData);
+        return migrateState(parsed);
       } catch (error) {
         console.error(error);
         return deepClone(defaultData);
@@ -2226,7 +2287,12 @@
     }
 
     function exportJson() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const exportPayload = {
+        ...state,
+        version: DATA_VERSION,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -2235,9 +2301,27 @@
       URL.revokeObjectURL(url);
     }
 
+    function importJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          state = migrateState(parsed);
+          selectedProjectId = state.projects[0]?.id || null;
+          saveState();
+          renderAll();
+          alert('資料匯入成功。');
+        } catch (error) {
+          console.error(error);
+          alert('匯入失敗，請確認 JSON 檔案格式是否正確。');
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
     function resetDemoData() {
       if (!confirm('確定要重置為示範資料嗎？目前資料會被覆蓋。')) return;
-      state = deepClone(defaultData);
+      state = migrateState(deepClone(defaultData));
       selectedProjectId = state.projects[0]?.id || null;
       saveState();
       renderAll();
@@ -2270,6 +2354,14 @@
         openModal('projectModal');
       });
       document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+      document.getElementById('importJsonBtn').addEventListener('click', () => {
+        document.getElementById('importJsonInput').click();
+      });
+      document.getElementById('importJsonInput').addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (file) importJsonFile(file);
+        event.target.value = '';
+      });
       document.getElementById('resetDemoBtn').addEventListener('click', resetDemoData);
       const openCalendarEventBtn = document.getElementById('openCalendarEventModal');
       if (openCalendarEventBtn) openCalendarEventBtn.addEventListener('click', () => openCalendarEventModal());
