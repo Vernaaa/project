@@ -1945,7 +1945,7 @@
         Object.assign(target, { title, date, time, eventType, owner, note });
       } else {
         const nextId = state.customCalendarEvents.length ? Math.max(...state.customCalendarEvents.map(item => item.id)) + 1 : 1;
-        state.customCalendarEvents.push({ id: nextId, title, date, time, eventType
+        state.customCalendarEvents.push({ id: nextId, title, date, time, eventType, owner, note });
       }
       saveState();
       closeModal('calendarEventModal');
